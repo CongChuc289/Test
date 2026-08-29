@@ -1,182 +1,729 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  
-  <meta name="theme-color" content="#6a11cb">
-  <link rel="manifest" href="/manifest.json">
-  
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: "Times New Roman", serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thiệp Gấu Bông Tương Tác 3D</title>
+    <!-- Nạp Fonts chữ lãng mạn và hiện đại -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Quicksand:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Palette màu Pastel Lãng mạn, sang trọng */
+            --bg-gradient-1: #fdfbfb;
+            --bg-gradient-2: #ffe4e1; /* Misty Rose */
+            
+            --card-front-bg: #fff0f5; /* Lavender Blush */
+            --card-inner-bg: #fffdfa; /* Creamy White */
+            --card-back-bg: #ffe4e1;
+            
+            --text-dark: #4a3b32;
+            --text-highlight: #d81b60; /* Pinkish Red */
+            --border-color: #e8d0ce;
+            
+            /* Màu Gấu Bông */
+            --teddy-brown: #d2b48c;
+            --teddy-light: #ffebd2;
+            --teddy-outline: #5c4033;
+            --heart-red: #ff4d6d;
+            
+            /* Kích thước thẻ */
+            --card-width: 350px; /* Chiều rộng của 1 trang */
+            --card-height: 500px; /* Chiều cao thiệp */
+            --transition-time: 1.2s;
+        }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: linear-gradient(135deg, #a18cd1, #fbc2eb);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    .card {
-      width: 360px;
-      background: #ffffff;
-      border-radius: 20px;
-      padding: 30px 25px;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-      animation: fadeIn 0.6s ease;
-    }
+        body {
+            font-family: 'Quicksand', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            /* Nền chuyển màu nhẹ nhàng */
+            background: linear-gradient(135deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 100%);
+            overflow: hidden;
+            color: var(--text-dark);
+        }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+        .scene {
+            width: 100%;
+            height: 70vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 2500px; /* Tạo độ sâu 3D */
+            position: relative;
+            z-index: 10;
+        }
 
-    h1 {
-      margin: 0 0 20px;
-      text-align: center;
-      font-size: 26px;
-      color: #333;
-    }
+        .book-wrapper {
+            position: relative;
+            width: calc(var(--card-width) * 2); /* Tổng chiều rộng 2 trang khi mở */
+            height: var(--card-height);
+            transform-style: preserve-3d;
+            /* Mặc định ở Trang 1 (Bìa): Đẩy container sang trái để bìa căn giữa màn hình */
+            transform: translateX(-25%);
+            transition: transform var(--transition-time) cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
 
-    .form-group {
-      margin-bottom: 15px;
-    }
+        /* Các trạng thái căn giữa của quyển sách */
+        .book-wrapper.state-1 { transform: translateX(0); }       /* Mở ra: Bìa trái, Nội dung phải -> Căn giữa 0 */
+        .book-wrapper.state-2 { transform: translateX(25%); }     /* Đóng lại mặt sau: Đẩy sang phải để mặt sau căn giữa */
 
-    .form-group label {
-      display: block;
-      font-size: 14px;
-      margin-bottom: 5px;
-      color: #555;
-      text-align: left;
-    }
+        .page {
+            position: absolute;
+            right: 0; /* Neo trang vào nửa phải của container */
+            width: 50%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transform-origin: left center; /* Điểm xoay ở gáy sách (cạnh trái của trang) */
+            transition: transform var(--transition-time) cubic-bezier(0.645, 0.045, 0.355, 1), z-index 0.5s;
+            border-radius: 20px;
+        }
 
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      background: #f7f7f7;
-      font-size: 14px;
-      transition: 0.3s;
-    }
+        /* Định dạng 2 mặt của mỗi trang giấy */
+        .face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden; /* Giấu mặt sau khi bị lật ngược */
+            border-radius: 15px;
+            overflow: hidden;
+            background-color: var(--card-inner-bg);
+            /* Viền bo mềm mại và bóng đổ 3D */
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.02), 0 10px 30px rgba(0,0,0,0.1);
+        }
 
-    .form-group input:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: #8e44ad;
-      background: #fff;
-    }
+        /* Mặt sau của tờ giấy phải được lật 180 độ mặc định */
+        .face.back {
+            transform: rotateY(180deg);
+        }
 
-    button {
-      width: 100%;
-      margin-top: 10px;
-      padding: 14px;
-      border: none;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #6a11cb, #2575fc);
-      color: #fff;
-      font-size: 15px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
+        #page1 { z-index: 2; } /* Bìa ngoài nằm trên */
+        #page2 { z-index: 1; } /* Mặt trong nằm dưới */
 
-    button:hover {
-      opacity: 0.85;
-      transform: translateY(-1px);
-    }
+        /* Hiệu ứng bóng gáy sách tạo chiều sâu */
+        .spine-shadow {
+            position: absolute;
+            top: 0; bottom: 0; width: 40px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .spine-left { left: 0; background: linear-gradient(to right, rgba(0,0,0,0.12), transparent); }
+        .spine-right { right: 0; background: linear-gradient(to left, rgba(0,0,0,0.12), transparent); }
 
-    .footer {
-      margin-top: 20px;
-      text-align: center;
-      font-size: 12px;
-      color: #666;
-    }
-  </style>
+        /* Trạng thái lật trang */
+        .flipped {
+            transform: rotateY(-180deg);
+        }
+
+        /* Cập nhật Z-index khi lật để các trang không đè sai lớp */
+        #page1.flipped { z-index: 1; }
+        #page2.flipped { z-index: 2; }
+
+        .front-cover {
+            cursor: pointer;
+            background-color: var(--card-front-bg);
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.6) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(255,255,255,0.6) 2px, transparent 2px);
+            background-size: 25px 25px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            border: 2px solid rgba(255,255,255,0.8);
+        }
+
+        .envelope-wrapper {
+            position: relative;
+            animation: floatUp 3s ease-in-out infinite;
+            filter: drop-shadow(0 15px 15px rgba(216, 27, 96, 0.15));
+            margin-bottom: 30px;
+        }
+
+        @keyframes floatUp {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        .open-me-text {
+            font-family: 'Dancing Script', cursive;
+            font-size: 3.5rem;
+            color: var(--text-highlight);
+            text-shadow: 2px 2px 0 #fff;
+            margin-top: 15px;
+        }
+
+        .inner-left {
+            padding: 30px;
+            background-color: var(--card-inner-bg);
+            background-image: radial-gradient(circle at 50% 50%, rgba(216, 27, 96, 0.03) 0%, transparent 60%);
+        }
+
+        .message-container {
+            height: 100%;
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            position: relative;
+            background: rgba(255,255,255,0.8);
+        }
+
+        .recipient {
+            font-family: 'Dancing Script', cursive;
+            font-size: 2.2rem;
+            color: var(--text-dark);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .message-body {
+            font-size: 1.3rem; line-height: 1.8; font-weight: 700; text-align: center;
+            background: #fff; padding: 25px 20px; border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(216, 27, 96, 0.05);
+            position: relative; margin: auto 0;
+        }
+        .message-body::before, .message-body::after {
+            content: '"'; font-family: Georgia, serif; font-size: 4rem;
+            color: rgba(216, 27, 96, 0.15); position: absolute;
+        }
+        .message-body::before { top: -5px; left: 10px; }
+        .message-body::after { bottom: -35px; right: 10px; }
+
+        .sender { text-align: right; font-family: 'Dancing Script', cursive; font-size: 2rem; color: var(--text-highlight); font-weight: bold; }
+
+        /* Băng dính trang trí */
+        .washi-tape { position: absolute; width: 45px; height: 16px; z-index: 10; box-shadow: 1px 1px 3px rgba(0,0,0,0.1); }
+        .wt-1 { top: -8px; left: 20px; transform: rotate(-12deg); background-color: rgba(255, 182, 193, 0.8); }
+        .wt-2 { bottom: -8px; right: 20px; transform: rotate(-15deg); background-color: rgba(173, 216, 230, 0.8); }
+
+        .inner-right { padding: 30px; background-color: var(--card-inner-bg); }
+        
+        .teddy-scene {
+            height: 100%; border: 2px dashed var(--border-color); border-radius: 12px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; overflow: hidden; background: rgba(255,255,255,0.8);
+        }
+
+        .cloud-bg {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 250px; height: 250px;
+            background: radial-gradient(circle, rgba(255, 228, 225, 0.6) 0%, transparent 70%);
+            border-radius: 50%; z-index: 0;
+        }
+
+        .teddy-wrapper { position: relative; z-index: 2; animation: bounce 4s ease-in-out infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+        .love-text { font-family: 'Dancing Script', cursive; font-size: 3.2rem; color: var(--text-dark); margin-top: 15px; z-index: 2; line-height: 1; }
+        .love-subtext { font-size: 1rem; text-transform: uppercase; letter-spacing: 4px; color: #a1887f; margin-top: 8px; z-index: 2; font-weight: bold; }
+
+        .back-cover {
+            background-color: var(--card-back-bg);
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.6) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(255,255,255,0.6) 2px, transparent 2px);
+            background-size: 25px 25px;
+            display: flex; justify-content: center; align-items: center;
+            border: 2px solid rgba(255,255,255,0.8);
+        }
+
+        .handmade-badge { text-align: center; opacity: 0.8; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.05)); }
+        .handmade-badge svg { margin-bottom: 15px; }
+        .handmade-badge p { font-size: 1rem; letter-spacing: 3px; text-transform: uppercase; font-weight: 900; color: var(--text-dark); }
+
+        .controls-container {
+            position: relative;
+            z-index: 20;
+            margin-top: 40px;
+            display: flex;
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            backdrop-filter: blur(5px);
+        }
+
+        .btn-page {
+            background: #fff;
+            color: var(--text-highlight);
+            border: 2px solid #fff;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 700;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(216, 27, 96, 0.1);
+        }
+
+        .btn-page:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(216, 27, 96, 0.2);
+            border-color: var(--card-back-bg);
+        }
+
+        .btn-page:active:not(:disabled) { transform: translateY(1px); }
+
+        .btn-page:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            color: #999;
+            box-shadow: none;
+        }
+
+        .intro-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .intro-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .intro-content {
+            text-align: center;
+            animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            padding: 20px;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .intro-text {
+            font-family: 'Dancing Script', cursive;
+            font-size: 3.5rem;
+            color: var(--text-highlight);
+            margin: 20px 0 40px;
+            text-shadow: 2px 2px 0 #fff;
+            line-height: 1.3;
+        }
+
+        .btn-start {
+            background: var(--text-highlight);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(216, 27, 96, 0.3);
+            transition: all 0.3s ease;
+            animation: pulse 2s infinite;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 25px rgba(216, 27, 96, 0.4);
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(216, 27, 96, 0.5); }
+            70% { box-shadow: 0 0 0 20px rgba(216, 27, 96, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(216, 27, 96, 0); }
+        }
+
+        /* Container chứa thiệp (ẩn lúc đầu) */
+        .main-content {
+            opacity: 0;
+            transform: scale(0.8) translateY(20px);
+            transition: opacity 1s ease 0.3s, transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: absolute; 
+            height: 100%;
+            pointer-events: none; /* Khóa tương tác khi chưa hiện */
+        }
+
+        .main-content.visible {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: auto; /* Mở khóa tương tác */
+        }
+
+
+
+        /* Trái tim hồng bay nhẹ trên tất cả các page */
+        .page-hearts {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 8;
+            border-radius: 15px;
+        }
+
+        .page-heart {
+            position: absolute;
+            bottom: -35px;
+            left: var(--x);
+            color: #ff8fb1;
+            font-size: var(--size);
+            font-weight: 900;
+            font-weight: 900;
+            opacity: 0;
+            animation: pageHeartFloat var(--duration) ease-in-out infinite;
+            animation-delay: var(--delay);
+            filter: drop-shadow(0 4px 6px rgba(216, 27, 96, 0.24));
+        }
+
+        @keyframes pageHeartFloat {
+            0% {
+                transform: translate3d(0, 0, 0) rotate(-8deg) scale(.65);
+                opacity: 0;
+            }
+            15% {
+                opacity: .7;
+            }
+            50% {
+                transform: translate3d(var(--drift), -260px, 0) rotate(10deg) scale(1);
+                opacity: .8;
+            }
+            100% {
+                transform: translate3d(calc(var(--drift) * -0.7), -580px, 0) rotate(-12deg) scale(.7);
+                opacity: 0;
+            }
+        }
+
+        /* Hiệu ứng trái tim động ở trang cuối */
+        .heart-finale {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .floating-heart {
+            position: absolute;
+            bottom: -40px;
+            left: var(--x);
+            font-size: var(--size);
+            opacity: 0;
+            animation: heartFloat var(--duration) ease-in-out infinite;
+            animation-delay: var(--delay);
+            filter: drop-shadow(0 4px 5px rgba(216, 27, 96, 0.18));
+        }
+
+        @keyframes heartFloat {
+            0% {
+                transform: translateY(0) rotate(0deg) scale(0.7);
+                opacity: 0;
+            }
+            12% {
+                opacity: 0.85;
+            }
+            50% {
+                transform: translateY(-240px) translateX(25px) rotate(12deg) scale(1);
+                opacity: 0.9;
+            }
+            100% {
+                transform: translateY(-560px) translateX(-35px) rotate(-15deg) scale(0.75);
+                opacity: 0;
+            }
+        }
+
+        /* Có thể click toàn bộ trang cuối để quay lại nội dung */
+        .finale-click {
+            cursor: pointer;
+        }
+
+        /* Phản hồi trên màn hình nhỏ */
+        @media (max-width: 800px) {
+            .scene { transform: scale(0.8); }
+            .controls-container { transform: scale(0.9); margin-top: 20px; }
+            .intro-text { font-size: 2.8rem; }
+        }
+        @media (max-width: 600px) {
+            .scene { transform: scale(0.6); }
+            .intro-text { font-size: 2.2rem; }
+        }
+        @media (max-width: 450px) {
+            .scene { transform: scale(0.48); }
+            .intro-text { font-size: 1.8rem; }
+            .btn-start { font-size: 1.2rem; padding: 12px 30px; }
+        }
+    </style>
 </head>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
-}
-</script>
-<body onload="UpdateData()">
+<body>
 
-  <div class="card">
-    <h1>Config Stair LED</h1>
-
-    <form action="/Config" method="post" onsubmit="return validateform()">
-
-      <div class="form-group">
-        <label>Chế độ hoạt động</label>
-        <select id="mode_act" name="mode_act">
-          <option value="">-- Chọn chế độ --</option>
-          <option value="1">MODE_BASIC</option>
-          <option value="2">MODE_TEST</option>
-          <option value="3">MODE_BLINK</option>
-          <option value="4">MODE_SANG_NHAP_NHAY</option>
-          <option value="5">MODE_SANG_DAN_DON_LEN</option>
-          <option value="6">MODE_SANG_DAN_DON_XUONG</option>
-          <option value="7">MODE_SANG_TONG_HOP</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Số bậc cầu thang</label>
-        <input type="number" id="number_step" name="number_step" placeholder="Ví dụ: 16">
-      </div>
-
-      <div class="form-group">
-        <label>Thời gian sáng mỗi bậc (ms)</label>
-        <input type="number" id="timeset" name="timeset" placeholder="Ví dụ: 200">
-      </div>
-
-      <div class="form-group">
-        <label>Thời gian tắt LED (ms)</label>
-        <input type="number" id="timeoff" name="timeoff" placeholder="Ví dụ: 3000">
-      </div>
-
-      <button type="submit">CẤU HÌNH</button>
-    </form>
-
-    <div class="footer">
-      © congchuc289@gmail.com
+    <div class="intro-screen" id="introScreen">
+        <div class="intro-content">
+            <div class="envelope-wrapper" style="margin-bottom: 0;">
+                <svg width="150" height="150" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="12,47 50,17 88,47 88,87 12,87" fill="rgba(0,0,0,0.05)"/>
+                    <rect x="15" y="15" width="70" height="50" fill="#ffffff" rx="3" stroke="#e8d0ce" stroke-width="1"/>
+                    <polygon points="10,40 50,70 90,40 90,85 10,85" fill="#fffdfa" stroke="#e8d0ce" stroke-width="1.5" stroke-linejoin="round"/>
+                    <circle cx="50" cy="70" r="12" fill="var(--heart-red)" stroke="#c2185b" stroke-width="1"/>
+                    <path d="M 50 76 S 43 70 43 65 A 4 4 0 0 1 50 61 A 4 4 0 0 1 57 65 C 57 70 50 76 50 76 Z" fill="#ffffff"/>
+                </svg>
+            </div>
+            <h1 class="intro-text">Hello em iu!<br>NoadD có một bức thư...</h1>
+            <button class="btn-start" onclick="startExperience()">
+                Nhấn vào đây
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+        </div>
     </div>
-  </div>
 
-<script>
-function validateform() {
-  var mode = document.getElementById("mode_act").value;
+    <div class="main-content" id="mainContent">
+        <div class="scene">
+            <div class="book-wrapper" id="bookWrapper">
+                
+                <div class="page" id="page1">
+                    <!-- Mặt trước Trang 1: Bìa ngoài -->
+                    <div class="face front front-cover" onclick="turnNext()" style="cursor: pointer;">
+                        <div class="envelope-wrapper">
+                            <svg width="140" height="140" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <polygon points="10,45 50,15 90,45" fill="#e8d0ce" stroke="var(--text-dark)" stroke-width="2" stroke-linejoin="round"/>
+                                <rect x="18" y="25" width="64" height="40" fill="#ffffff" rx="3" stroke="var(--text-dark)" stroke-width="2"/>
+                                <path d="M 30 35 L 70 35 M 30 45 L 50 45" stroke="var(--text-dark)" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M 65 50 S 60 45 60 40 A 3 3 0 0 1 65 37 A 3 3 0 0 1 70 40 C 70 45 65 50 65 50 Z" fill="var(--heart-red)" stroke="var(--heart-red)" stroke-width="1"/>
+                                <polygon points="10,40 50,70 90,40 90,85 10,85" fill="#fffdfa" stroke="var(--text-dark)" stroke-width="2" stroke-linejoin="round"/>
+                                <circle cx="50" cy="70" r="10" fill="#ffffff" stroke="var(--text-dark)" stroke-width="2"/>
+                                <path d="M 50 75 S 44 70 44 66 A 3.5 3.5 0 0 1 50 63 A 3.5 3.5 0 0 1 56 66 C 56 70 50 75 50 75 Z" fill="var(--heart-red)"/>
+                            </svg>
+                        </div>
+                        <div class="open-me-text">Open me...</div>
+                    </div>
+                    
+                    <!-- Mặt sau Trang 1: Bên trong lề TRÁI -->
+                    <div class="face back inner-left" onclick="turnPrev()">
+                        <div class="spine-shadow spine-left"></div>
+                            <div class="page-hearts" aria-hidden="true">
+                                <span class="page-heart" style="--x:8%;--size:40px;--duration:6s;--delay:0s;--drift:18px;">♥</span>
+                                <span class="page-heart" style="--x:22%;--size:36px;--duration:7s;--delay:1.5s;--drift:-20px;">♥</span>
+                                <span class="page-heart" style="--x:40%;--size:24px;--duration:5.8s;--delay:2.5s;--drift:14px;">♥</span>
+                                <span class="page-heart" style="--x:58%;--size:44px;--duration:6.8s;--delay:.8s;--drift:-16px;">♥</span>
+                                <span class="page-heart" style="--x:76%;--size:25px;--duration:5.5s;--delay:3s;--drift:22px;">♥</span>
+                                <span class="page-heart" style="--x:90%;--size:40px;--duration:7.2s;--delay:1s;--drift:-18px;">♥</span>
+                            </div>
 
-  if (mode === "") {
-    alert("Vui lòng chọn chế độ hoạt động");
-    return false;
-  }
+                        <div class="message-container">
+                            <div class="washi-tape wt-1"></div>
+                            <div class="washi-tape wt-2"></div>
+                            <div class="recipient">Gửi: emiucuaanh</div>
+                            <div class="message-body">
+                                Tặng em món quà nhỏ<br>với tất cả yêu thương<br>này nhé!
+                            </div>
+                            <div class="sender">Từ: NoadD</div>
+                        </div>
+                    </div>
+                </div>
 
-  alert("Cấu hình thành công - chờ 5s để khởi động lại");
-  return true;
-}
+                <div class="page" id="page2">
+                    <!-- Mặt trước Trang 2: Bên trong lề PHẢI (Gấu bông) -->
+                    <div class="face front inner-right" onclick="turnNext()">
+                        <div class="spine-shadow spine-right"></div>
+                            <div class="page-hearts" aria-hidden="true">
+                                <span class="page-heart" style="--x:8%;--size:40px;--duration:6s;--delay:0s;--drift:18px;">♥</span>
+                                <span class="page-heart" style="--x:22%;--size:36px;--duration:7s;--delay:1.5s;--drift:-20px;">♥</span>
+                                <span class="page-heart" style="--x:40%;--size:24px;--duration:5.8s;--delay:2.5s;--drift:14px;">♥</span>
+                                <span class="page-heart" style="--x:58%;--size:44px;--duration:6.8s;--delay:.8s;--drift:-16px;">♥</span>
+                                <span class="page-heart" style="--x:76%;--size:25px;--duration:5.5s;--delay:3s;--drift:22px;">♥</span>
+                                <span class="page-heart" style="--x:90%;--size:40px;--duration:7.2s;--delay:1s;--drift:-18px;">♥</span>
+                            </div>
 
-function UpdateData() {
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status == 200) {
-      var DataJson = JSON.parse(this.responseText);
+                        <div class="teddy-scene">
+                            <div class="cloud-bg"></div>
+                            <div class="teddy-wrapper">
+                                <svg width="160" height="160" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                                    <ellipse cx="32" cy="95" rx="16" ry="12" fill="var(--teddy-light)" stroke="var(--teddy-outline)" stroke-width="2.5" />
+                                    <ellipse cx="30" cy="97" rx="6" ry="4" fill="var(--teddy-outline)" />
+                                    <ellipse cx="88" cy="95" rx="16" ry="12" fill="var(--teddy-light)" stroke="var(--teddy-outline)" stroke-width="2.5" />
+                                    <ellipse cx="90" cy="97" rx="6" ry="4" fill="var(--teddy-outline)" />
+                                    
+                                    <ellipse cx="60" cy="75" rx="28" ry="32" fill="var(--teddy-brown)" stroke="var(--teddy-outline)" stroke-width="2.5" />
+                                    <ellipse cx="60" cy="80" rx="16" ry="20" fill="var(--teddy-light)" />
+                                    
+                                    <circle cx="30" cy="28" r="13" fill="var(--teddy-brown)" stroke="var(--teddy-outline)" stroke-width="2.5" />
+                                    <circle cx="30" cy="28" r="6" fill="var(--teddy-light)" />
+                                    <circle cx="90" cy="28" r="13" fill="var(--teddy-brown)" stroke="var(--teddy-outline)" stroke-width="2.5" />
+                                    <circle cx="90" cy="28" r="6" fill="var(--teddy-light)" />
+                                    
+                                    <circle cx="60" cy="50" r="34" fill="var(--teddy-brown)" stroke="var(--teddy-outline)" stroke-width="2.5" />
+                                    
+                                    <ellipse cx="38" cy="58" rx="5" ry="3" fill="rgba(255, 77, 109, 0.4)" />
+                                    <ellipse cx="82" cy="58" rx="5" ry="3" fill="rgba(255, 77, 109, 0.4)" />
+                                    
+                                    <ellipse cx="60" cy="63" rx="14" ry="10" fill="var(--teddy-light)" stroke="var(--teddy-outline)" stroke-width="2.5" />
+                                    <ellipse cx="60" cy="58" rx="5" ry="3.5" fill="var(--teddy-outline)" />
+                                    <ellipse cx="58.5" cy="57" rx="1.5" ry="1" fill="#ffffff" />
+                                    <path d="M 55 64 Q 60 68 65 64" stroke="var(--teddy-outline)" stroke-width="2" fill="none" stroke-linecap="round"/>
+                                    
+                                    <circle cx="45" cy="46" r="4.5" fill="var(--teddy-outline)" />
+                                    <circle cx="43.5" cy="44.5" r="1.5" fill="#ffffff" />
+                                    
+                                    <circle cx="75" cy="46" r="4.5" fill="var(--teddy-outline)" />
+                                    <circle cx="73.5" cy="44.5" r="1.5" fill="#ffffff" />
 
-      document.getElementById("mode_act").value     = DataJson.mode_act;
-      document.getElementById("number_step").value = DataJson.number_step;
-      document.getElementById("timeset").value     = DataJson.timeset;
-      document.getElementById("timeoff").value     = DataJson.timeoff;
-    }
-  };
-  xhttp.open("GET", "/sendweb", true);
-  xhttp.send();
-}
-</script>
+                                    <g transform="translate(12, 26) scale(0.8)">
+                                        <path d="M 60 95 C 60 95, 25 75, 25 52 A 16 16 0 0 1 60 45 A 16 16 0 0 1 95 52 C 95 75, 60 95, 60 95 Z" fill="var(--heart-red)" stroke="#b71c1c" stroke-width="2"/>
+                                        <path d="M 33 52 A 8 8 0 0 1 45 46" fill="none" stroke="#ff8a80" stroke-width="3" stroke-linecap="round"/>
+                                        <text x="60" y="73" font-family="'Dancing Script', cursive" font-size="28" fill="#ffffff" font-weight="bold" text-anchor="middle">Love</text>
+                                    </g>
 
+                                    <ellipse cx="35" cy="72" rx="9" ry="14" fill="var(--teddy-brown)" stroke="var(--teddy-outline)" stroke-width="2.5" transform="rotate(-40 35 72)"/>
+                                    <ellipse cx="85" cy="72" rx="9" ry="14" fill="var(--teddy-brown)" stroke="var(--teddy-outline)" stroke-width="2.5" transform="rotate(40 85 72)"/>
+                                </svg>
+                            </div>
+                            <div class="love-text">My loves...</div>
+                            <div class="love-subtext">Forever & Always</div>
+                        </div>
+                    </div>
+
+                    <!-- Mặt sau Trang 2: Bìa Sau -->
+                    <div class="face back back-cover finale-click" onclick="returnToContent()">
+                            <div class="page-hearts" aria-hidden="true">
+                                <span class="page-heart" style="--x:8%;--size:40px;--duration:6s;--delay:0s;--drift:18px;">♥</span>
+                                <span class="page-heart" style="--x:22%;--size:36px;--duration:7s;--delay:1.5s;--drift:-20px;">♥</span>
+                                <span class="page-heart" style="--x:40%;--size:24px;--duration:5.8s;--delay:2.5s;--drift:14px;">♥</span>
+                                <span class="page-heart" style="--x:58%;--size:44px;--duration:6.8s;--delay:.8s;--drift:-16px;">♥</span>
+                                <span class="page-heart" style="--x:76%;--size:25px;--duration:5.5s;--delay:3s;--drift:22px;">♥</span>
+                                <span class="page-heart" style="--x:90%;--size:40px;--duration:7.2s;--delay:1s;--drift:-18px;">♥</span>
+                            </div>
+
+                        <div class="spine-shadow spine-right"></div>
+                            <div class="page-hearts" aria-hidden="true">
+                                <span class="page-heart" style="--x:8%;--size:40px;--duration:6s;--delay:0s;--drift:18px;">♥</span>
+                                <span class="page-heart" style="--x:22%;--size:36px;--duration:7s;--delay:1.5s;--drift:-20px;">♥</span>
+                                <span class="page-heart" style="--x:40%;--size:24px;--duration:5.8s;--delay:2.5s;--drift:14px;">♥</span>
+                                <span class="page-heart" style="--x:58%;--size:44px;--duration:6.8s;--delay:.8s;--drift:-16px;">♥</span>
+                                <span class="page-heart" style="--x:76%;--size:25px;--duration:5.5s;--delay:3s;--drift:22px;">♥</span>
+                                <span class="page-heart" style="--x:90%;--size:40px;--duration:7.2s;--delay:1s;--drift:-18px;">♥</span>
+                            </div>
+
+                        <div class="handmade-badge">
+                            <svg viewBox="0 0 50 50" width="80" height="80">
+                                <circle cx="25" cy="25" r="23" fill="none" stroke="var(--text-dark)" stroke-width="2" stroke-dasharray="4 3"/>
+                                <path d="M25 32 S15 22 15 15 A5 5 0 0 1 25 12 A5 5 0 0 1 35 15 C35 22 25 32 25 32 Z" fill="var(--heart-red)"/>
+                            </svg>
+                            <p>Handmade<br>with Love</p>
+                        </div>
+
+                        <div class="heart-finale" aria-hidden="true">
+                            <span class="floating-heart" style="--x:8%;--size:36px;--duration:6s;--delay:0s;">♥</span>
+                            <span class="floating-heart" style="--x:18%;--size:42px;--duration:7s;--delay:1.2s;">♥</span>
+                            <span class="floating-heart" style="--x:30%;--size:40px;--duration:5.5s;--delay:2s;">♥</span>
+                            <span class="floating-heart" style="--x:43%;--size:40px;--duration:6.5s;--delay:.6s;">♥</span>
+                            <span class="floating-heart" style="--x:55%;--size:44px;--duration:7.5s;--delay:2.8s;">♥</span>
+                            <span class="floating-heart" style="--x:68%;--size:44px;--duration:6s;--delay:1.8s;">♥</span>
+                            <span class="floating-heart" style="--x:80%;--size:29px;--duration:5.8s;--delay:3s;">♥</span>
+                            <span class="floating-heart" style="--x:90%;--size:38px;--duration:7s;--delay:.9s;">♥</span>
+                        </div>
+
+                        <div style="position:absolute; bottom:28px; z-index:4; font-family:'Dancing Script',cursive; font-size:1.25rem; color:var(--text-highlight);">
+                            Chạm vào thiệp để quay lại 💕
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    <script>
+        // Cấu hình các element
+        const bookWrapper = document.getElementById('bookWrapper');
+        const page1 = document.getElementById('page1');
+        const page2 = document.getElementById('page2');
+        let currentState = 0;
+
+        function updateUI() {
+            // Cập nhật trạng thái class trên Container để căn giữa tự động
+            bookWrapper.className = 'book-wrapper'; 
+            if (currentState === 1) bookWrapper.classList.add('state-1');
+            if (currentState === 2) bookWrapper.classList.add('state-2');
+
+            // Điều khiển lật từng trang
+            if (currentState === 0) {
+                page1.classList.remove('flipped');
+                page2.classList.remove('flipped');
+            } else if (currentState === 1) {
+                page1.classList.add('flipped');
+                page2.classList.remove('flipped');
+            } else if (currentState === 2) {
+                page1.classList.add('flipped');
+                page2.classList.add('flipped');
+            }
+
+            // Bật/tắt nút bấm tùy vào trạng thái
+            btnPrev.disabled = (currentState === 0);
+            btnNext.disabled = (currentState === 2);
+            
+            // Thay đổi text nút cho hợp lý
+            if(currentState === 0) {
+                btnNext.innerHTML = 'Mở thiệp <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
+            } else if (currentState === 1) {
+                btnNext.innerHTML = 'Xem mặt sau <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
+                btnPrev.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg> Đóng thiệp';
+            } else {
+                btnPrev.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg> Mở thiệp';
+            }
+        }
+
+        function turnNext() {
+            if (currentState < 2) {
+                currentState++;
+                updateUI();
+            }
+        }
+
+        function turnPrev() {
+            if (currentState > 0) {
+                currentState--;
+                updateUI();
+            }
+        }
+
+        function returnToContent() {
+            // Từ trang cuối quay lại trang nội dung chính
+            currentState = 1;
+            updateUI();
+        }
+
+        function startExperience() {
+            // Ẩn màn hình chào
+            document.getElementById('introScreen').classList.add('hidden');
+            // Hiện nội dung thiệp với animation pop-up mượt mà
+            document.getElementById('mainContent').classList.add('visible');
+        }
+
+        // Khởi tạo giao diện ban đầu
+        updateUI();
+    </script>
 </body>
 </html>
