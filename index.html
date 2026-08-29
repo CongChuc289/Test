@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <meta name="theme-color" content="#6a11cb">
+  <link rel="manifest" href="/manifest.json">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Times New Roman", serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #a18cd1, #fbc2eb);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .card {
+      width: 360px;
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 30px 25px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+      animation: fadeIn 0.6s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      margin: 0 0 20px;
+      text-align: center;
+      font-size: 26px;
+      color: #333;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 5px;
+      color: #555;
+      text-align: left;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      background: #f7f7f7;
+      font-size: 14px;
+      transition: 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #8e44ad;
+      background: #fff;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      opacity: 0.85;
+      transform: translateY(-1px);
+    }
+
+    .footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+</script>
+<body onload="UpdateData()">
+
+  <div class="card">
+    <h1>Config Stair LED</h1>
+
+    <form action="/Config" method="post" onsubmit="return validateform()">
+
+      <div class="form-group">
+        <label>Chế độ hoạt động</label>
+        <select id="mode_act" name="mode_act">
+          <option value="">-- Chọn chế độ --</option>
+          <option value="1">MODE_BASIC</option>
+          <option value="2">MODE_TEST</option>
+          <option value="3">MODE_BLINK</option>
+          <option value="4">MODE_SANG_NHAP_NHAY</option>
+          <option value="5">MODE_SANG_DAN_DON_LEN</option>
+          <option value="6">MODE_SANG_DAN_DON_XUONG</option>
+          <option value="7">MODE_SANG_TONG_HOP</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Số bậc cầu thang</label>
+        <input type="number" id="number_step" name="number_step" placeholder="Ví dụ: 16">
+      </div>
+
+      <div class="form-group">
+        <label>Thời gian sáng mỗi bậc (ms)</label>
+        <input type="number" id="timeset" name="timeset" placeholder="Ví dụ: 200">
+      </div>
+
+      <div class="form-group">
+        <label>Thời gian tắt LED (ms)</label>
+        <input type="number" id="timeoff" name="timeoff" placeholder="Ví dụ: 3000">
+      </div>
+
+      <button type="submit">CẤU HÌNH</button>
+    </form>
+
+    <div class="footer">
+      © congchuc289@gmail.com
+    </div>
+  </div>
+
+<script>
+function validateform() {
+  var mode = document.getElementById("mode_act").value;
+
+  if (mode === "") {
+    alert("Vui lòng chọn chế độ hoạt động");
+    return false;
+  }
+
+  alert("Cấu hình thành công - chờ 5s để khởi động lại");
+  return true;
+}
+
+function UpdateData() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function () {
+    if (this.readyState == 4 && this.status == 200) {
+      var DataJson = JSON.parse(this.responseText);
+
+      document.getElementById("mode_act").value     = DataJson.mode_act;
+      document.getElementById("number_step").value = DataJson.number_step;
+      document.getElementById("timeset").value     = DataJson.timeset;
+      document.getElementById("timeoff").value     = DataJson.timeoff;
+    }
+  };
+  xhttp.open("GET", "/sendweb", true);
+  xhttp.send();
+}
+</script>
+
+</body>
+</html>
