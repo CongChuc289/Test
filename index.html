@@ -28,8 +28,9 @@
             --heart-red: #ff4d6d;
             
             /* Kích thước thẻ */
-            --card-width: 350px; /* Chiều rộng của 1 trang */
-            --card-height: 500px; /* Chiều cao thiệp */
+            /* Kích thước thiệp tự co theo màn hình */
+            --card-width: min(350px, 42vw, 70vh);
+            --card-height: min(500px, 71.43vw, 100vh);
             --transition-time: 1.2s;
         }
 
@@ -55,7 +56,9 @@
 
         .scene {
             width: 100%;
-            height: 70vh;
+            width: 100%;
+            height: min(78vh, 700px);
+            min-height: 0;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -462,20 +465,183 @@
             cursor: pointer;
         }
 
-        /* Phản hồi trên màn hình nhỏ */
+        /* ===== RESPONSIVE: PC / TABLET / ĐIỆN THOẠI ===== */
         @media (max-width: 800px) {
-            .scene { transform: scale(0.8); }
-            .controls-container { transform: scale(0.9); margin-top: 20px; }
-            .intro-text { font-size: 2.8rem; }
+            :root {
+                --card-width: min(350px, 43vw, 68vh);
+                --card-height: min(500px, 61vw, 97vh);
+            }
+
+            .scene {
+                height: min(76vh, 650px);
+                perspective: 1800px;
+            }
+
+            .controls-container {
+                margin-top: 12px;
+                gap: 10px;
+                padding: 8px 12px;
+                max-width: 94vw;
+            }
+
+            .btn-page {
+                padding: 10px 16px;
+                font-size: 1rem;
+            }
+
+            .intro-text {
+                font-size: clamp(2rem, 7vw, 2.8rem);
+            }
         }
+
         @media (max-width: 600px) {
-            .scene { transform: scale(0.6); }
-            .intro-text { font-size: 2.2rem; }
+            :root {
+                /* 1 trang chiếm khoảng 43vw => 2 trang vừa màn hình */
+                --card-width: min(350px, 43vw);
+                --card-height: calc(var(--card-width) * 1.42857);
+            }
+
+            body {
+                min-height: 100dvh;
+            }
+
+            .main-content {
+                height: 100dvh;
+            }
+
+            .scene {
+                height: auto;
+                width: 100vw;
+                flex: 0 0 auto;
+            }
+
+            .book-wrapper {
+                max-width: 100vw;
+            }
+
+            .inner-left,
+            .inner-right {
+                padding: clamp(10px, 3vw, 30px);
+            }
+
+            .message-container {
+                padding: clamp(10px, 3vw, 25px);
+            }
+
+            .recipient {
+                font-size: clamp(1.2rem, 5vw, 2.2rem);
+            }
+
+            .message-body {
+                font-size: clamp(.75rem, 3.2vw, 1.3rem);
+                line-height: 1.45;
+                padding: clamp(10px, 3vw, 25px) clamp(8px, 2.5vw, 20px);
+            }
+
+            .sender {
+                font-size: clamp(1.2rem, 5vw, 2rem);
+            }
+
+            .love-text {
+                font-size: clamp(1.7rem, 7vw, 3.2rem);
+            }
+
+            .love-subtext {
+                font-size: clamp(.55rem, 2.5vw, 1rem);
+                letter-spacing: clamp(1px, 1vw, 4px);
+            }
+
+            .controls-container {
+                margin-top: 8px;
+                gap: 6px;
+                padding: 6px 8px;
+            }
+
+            .btn-page {
+                padding: 8px 12px;
+                font-size: clamp(.75rem, 3.5vw, 1rem);
+                gap: 4px;
+            }
+
+            .intro-content {
+                padding: 16px;
+                max-width: 95vw;
+            }
+
+            .intro-text {
+                font-size: clamp(1.7rem, 8vw, 2.4rem);
+                margin: 16px 0 28px;
+            }
+
+            .btn-start {
+                font-size: clamp(1rem, 5vw, 1.3rem);
+                padding: 12px 28px;
+            }
+
+            .envelope-wrapper svg {
+                max-width: 34vw;
+                height: auto;
+            }
+
+            .teddy-wrapper svg {
+                width: min(160px, 32vw);
+                height: auto;
+            }
+
+            .cloud-bg {
+                width: min(250px, 55vw);
+                height: min(250px, 55vw);
+            }
+
+            .handmade-badge svg {
+                width: min(80px, 18vw);
+                height: auto;
+            }
+
+            .handmade-badge p {
+                font-size: clamp(.65rem, 2.8vw, 1rem);
+                letter-spacing: clamp(1px, .8vw, 3px);
+            }
         }
-        @media (max-width: 450px) {
-            .scene { transform: scale(0.48); }
-            .intro-text { font-size: 1.8rem; }
-            .btn-start { font-size: 1.2rem; padding: 12px 30px; }
+
+        @media (max-width: 380px) {
+            :root {
+                --card-width: 43vw;
+                --card-height: calc(var(--card-width) * 1.42857);
+            }
+
+            .btn-page {
+                padding: 7px 9px;
+            }
+
+            .controls-container {
+                gap: 4px;
+            }
+        }
+
+        /* Điện thoại nằm ngang */
+        @media (max-height: 600px) and (orientation: landscape) {
+            :root {
+                --card-height: 78vh;
+                --card-width: calc(var(--card-height) * .7);
+            }
+
+            .scene {
+                height: 82vh;
+            }
+
+            .controls-container {
+                margin-top: 4px;
+            }
+
+            .intro-text {
+                font-size: clamp(1.4rem, 5vh, 2.4rem);
+                margin: 10px 0 18px;
+            }
+
+            .intro-content {
+                padding: 8px;
+            }
         }
     </style>
 </head>
