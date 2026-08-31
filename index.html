@@ -52,6 +52,8 @@
             background: linear-gradient(135deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 100%);
             overflow: hidden;
             color: var(--text-dark);
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .scene {
@@ -465,6 +467,70 @@
             cursor: pointer;
         }
 
+
+        /* ===== FIX CĂN CHỮ RESPONSIVE ===== */
+        .face {
+            min-width: 0;
+        }
+
+        .inner-left,
+        .inner-right,
+        .front-cover,
+        .back-cover {
+            min-width: 0;
+            min-height: 0;
+        }
+
+        .message-container,
+        .teddy-scene {
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
+        }
+
+        .recipient {
+            width: 100%;
+            text-align: center;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            line-height: 1.2;
+        }
+
+        .message-body {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+            overflow-wrap: anywhere;
+            word-break: normal;
+            hyphens: auto;
+        }
+
+        .sender {
+            width: 100%;
+            text-align: right;
+            overflow-wrap: anywhere;
+            line-height: 1.2;
+        }
+
+        .open-me-text,
+        .love-text,
+        .love-subtext,
+        .handmade-badge,
+        .handmade-badge p {
+            max-width: 100%;
+            text-align: center;
+            overflow-wrap: anywhere;
+        }
+
+        /* Không cho chữ làm thay đổi kích thước trang */
+        .front-cover,
+        .back-cover {
+            padding-left: clamp(10px, 4vw, 30px);
+            padding-right: clamp(10px, 4vw, 30px);
+        }
+
         /* ===== RESPONSIVE: PC / TABLET / ĐIỆN THOẠI ===== */
         @media (max-width: 800px) {
             :root {
@@ -495,6 +561,27 @@
         }
 
         @media (max-width: 600px) {
+            .open-me-text {
+                font-size: clamp(1.15rem, 6vw, 2.4rem);
+                line-height: 1.05;
+                margin-top: 8px;
+            }
+
+            .recipient {
+                font-size: clamp(.85rem, 4.3vw, 1.6rem);
+                padding-bottom: 5px;
+            }
+
+            .message-body {
+                font-size: clamp(.68rem, 3.15vw, 1.15rem);
+                line-height: 1.35;
+                letter-spacing: 0;
+            }
+
+            .sender {
+                font-size: clamp(.9rem, 4vw, 1.5rem);
+            }
+
             :root {
                 /* 1 trang chiếm khoảng 43vw => 2 trang vừa màn hình */
                 --card-width: min(350px, 43vw);
